@@ -8,56 +8,56 @@
   license terms as Ruby.
 =end
 
-if RUBY_VERSION < "1.9.0"
+begin
+  raise unless ("a %{x}" % {:x=>'b'}) == 'a b'
+rescue ArgumentError
+  # Extension for String class. This feature is included in Ruby 1.9 or later.
+  #
+  # String#% method which accept "named argument". The translator can know
+  # the meaning of the msgids using "named argument" instead of %s/%d style.
+  class String
+    alias :_old_format_m :% # :nodoc:
 
-# Extension for String class. This feature is included in Ruby 1.9 or later.
-#
-# String#% method which accept "named argument". The translator can know 
-# the meaning of the msgids using "named argument" instead of %s/%d style.
-class String
-  alias :_old_format_m :% # :nodoc:
-    
-  # call-seq:
-  #  %(arg)
-  #  %(hash)
-  #
-  # Format - Uses str as a format specification, and returns the result of applying it to arg. 
-  # If the format specification contains more than one substitution, then arg must be 
-  # an Array containing the values to be substituted. See Kernel::sprintf for details of the 
-  # format string. This is the default behavior of the String class.
-  # * arg: an Array or other class except Hash.
-  # * Returns: formatted String
-  #
-  #  (e.g.) "%s, %s" % ["Masao", "Mutoh"]
-  #
-  # Also you can use a Hash as the "named argument". This is recommanded way for Ruby-GetText
-  # because the translators can understand the meanings of the msgids easily.
-  # * hash: {:key1 => value1, :key2 => value2, ... }
-  # * Returns: formatted String
-  #
-  #  (e.g.) "%{firstname}, %{familyname}" % {:firstname => "Masao", :familyname => "Mutoh"}
-  def %(args)
-    if args.kind_of?(Hash)
-      ret = dup
-      args.each {|key, value|
-        ret.gsub!(/\%\{#{key}\}/, value.to_s)
-      }
-      ret
-    else
-      ret = gsub(/%\{/, '%%{')
-      begin
-        ret._old_format_m(args)
-      rescue ArgumentError => e
-        if $DEBUG
-          $stderr.puts "  The string:#{ret}"
-          $stderr.puts "  args:#{args.inspect}"
-          puts e.backtrace
-        else
-          raise ArgumentError, e.message
+    # call-seq:
+    #  %(arg)
+    #  %(hash)
+    #
+    # Format - Uses str as a format specification, and returns the result of applying it to arg.
+    # If the format specification contains more than one substitution, then arg must be
+    # an Array containing the values to be substituted. See Kernel::sprintf for details of the
+    # format string. This is the default behavior of the String class.
+    # * arg: an Array or other class except Hash.
+    # * Returns: formatted String
+    #
+    #  (e.g.) "%s, %s" % ["Masao", "Mutoh"]
+    #
+    # Also you can use a Hash as the "named argument". This is recommanded way for Ruby-GetText
+    # because the translators can understand the meanings of the msgids easily.
+    # * hash: {:key1 => value1, :key2 => value2, ... }
+    # * Returns: formatted String
+    #
+    #  (e.g.) "%{firstname}, %{familyname}" % {:firstname => "Masao", :familyname => "Mutoh"}
+    def %(args)
+      if args.kind_of?(Hash)
+        ret = dup
+        args.each {|key, value|
+          ret.gsub!(/\%\{#{key}\}/, value.to_s)
+        }
+        ret
+      else
+        ret = gsub(/%\{/, '%%{')
+        begin
+          ret._old_format_m(args)
+        rescue ArgumentError => e
+          if $DEBUG
+            $stderr.puts "  The string:#{ret}"
+            $stderr.puts "  args:#{args.inspect}"
+            puts e.backtrace
+          else
+            raise ArgumentError, e.message
+          end
         end
       end
     end
   end
-end
-
 end
